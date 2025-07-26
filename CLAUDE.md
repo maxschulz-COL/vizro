@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **This is a fork focused on developing a new GUI builder feature.** The ultimate goal is to replace the entire monorepo with a single application that provides a visual interface for building Vizro dashboards.
 
-**Current Development Focus**: All new development should be concentrated in the `vizro-gui-analysis/` folder, which contains the architectural outline for the new GUI builder application.
+**Current Development Focus**: All new development should be concentrated in the `vizro-gui/` folder, which contains the GUI builder application implementation.
 
 **Legacy Context**: The existing monorepo contains:
 - **vizro-core**: Main Python framework for building dashboards (published as `vizro`)

@@ -9,7 +9,7 @@ The Vizro GUI Builder is a new application that provides a form-based interface 
 **Key Goals:**
 - Form-based dashboard creation without coding
 - Two-state interface: component tree building + property editing
-- Backend validation: combine frontend states and validate via Pydantic
+- Real-time validation: debounced backend validation on every form change with visual indicators
 - Generate valid Vizro JSON from validated backend response
 - Template system for quick dashboard creation
 - Schema-driven form interface for component tree and property editing
@@ -24,7 +24,7 @@ The Vizro GUI Builder is a new application that provides a form-based interface 
 - State Management: Zustand
 - UI Framework: shadcn/ui + Tailwind CSS
 - Form Generation: Custom forms derived from JSON Schema (avoiding limiting JSON form libraries)
-- Form Handling: React Hook Form + JSON Schema validation
+- Form Handling: React Hook Form + real-time backend validation (debounced)
 - Build Tool: Vite
 
 **Backend:**

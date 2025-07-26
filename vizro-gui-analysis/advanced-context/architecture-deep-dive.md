@@ -41,7 +41,7 @@
 - **State Management**: Zustand (lightweight, performant)
 - **UI Framework**: shadcn/ui + Tailwind CSS (modern, customizable, excellent form components)
 - **Form Generation**: Custom schema-driven forms (avoiding limiting JSON form libraries)
-- **Form Handling**: React Hook Form + JSON Schema validation
+- **Form Handling**: React Hook Form + real-time backend validation (debounced)
 - **Layout**: CSS Grid with Tailwind for app layout (Top Bar | Left Form | Central Preview | Right Form)
 - **Build Tool**: Vite (fast development, modern bundling)
 
@@ -206,15 +206,17 @@ interface CentralPreviewPanel {
   treeState: ComponentTree;
   propertyState: ComponentProperties;
   
-  // Backend validation results
-  validatedConfig: VizroDashboard | null;
-  validationErrors: ValidationError[];
-  isValidating: boolean;
+  // Real-time validation state
+  validationState: {
+    isValid: boolean | null; // null = not checked, true = valid, false = invalid
+    errors: ValidationError[];
+    isValidating: boolean;
+  };
   
   viewMode: 'json' | 'yaml' | 'preview'; // preview for future iframe
   
-  // Backend validation
-  validateAndGenerate: (treeData: ComponentTree, propertyData: ComponentProperties) => Promise<ValidationResult>;
+  // Real-time debounced validation
+  debouncedValidate: (treeData: ComponentTree, propertyData: ComponentProperties) => void;
   
   // Output formatting (after backend validation)
   formatJSON: (config: VizroDashboard) => string;
@@ -231,19 +233,107 @@ interface CentralPreviewPanel {
 ```
 
 **Current Phase Features:**
-- Send frontend states to backend for validation
+- Real-time form validation with visual feedback
+- Debounced API calls (500ms) to prevent excessive requests
+- Visual validation indicators throughout the UI
 - Backend combines states and validates via Dashboard.model_validate
 - Display validated JSON/YAML output from backend
 - Show validation errors with line numbers and field paths
 - View mode toggle (JSON/YAML)
 - Copy to clipboard functionality
 
-**Validation Flow:**
+**Real-Time Validation Flow:**
 1. Frontend forms update tree/property states
-2. Send both states to backend `/validate` endpoint
+2. Debounced trigger (500ms) sends both states to backend `/validate` endpoint  
 3. Backend combines states and runs Dashboard.model_validate
 4. Return validated config OR detailed validation errors
-5. Frontend displays result in preview panel
+5. Frontend displays validation status with visual indicators:
+   - ⏳ Validating... (during API call)
+   - ✅ Valid (configuration is complete and valid)
+   - ❌ Invalid (with detailed Pydantic error messages)
+   - ◯ Not validated (initial state)
+
+#### Real-Time Validation Implementation
+```typescript
+// Custom hook for real-time validation
+const useRealtimeValidation = () => {
+  const [validationState, setValidationState] = useState({
+    isValid: null, // null = not checked, true = valid, false = invalid
+    errors: [],
+    isValidating: false
+  });
+
+  const debouncedValidate = useCallback(
+    debounce(async (treeState, propertyState) => {
+      setValidationState(prev => ({ ...prev, isValidating: true }));
+      
+      try {
+        const result = await validateWithBackend(treeState, propertyState);
+        setValidationState({
+          isValid: result.isValid,
+          errors: result.errors || [],
+          isValidating: false
+        });
+      } catch (error) {
+        setValidationState({
+          isValid: false,
+          errors: [{ message: 'Validation failed' }],
+          isValidating: false
+        });
+      }
+    }, 500), // 500ms delay
+    []
+  );
+
+  return { validationState, debouncedValidate };
+};
+
+// Validation indicator component
+const ValidationIndicator = ({ state }) => {
+  if (state.isValidating) {
+    return <span className="text-yellow-500">⏳ Validating...</span>;
+  }
+  
+  if (state.isValid === true) {
+    return <span className="text-green-500">✅ Valid</span>;
+  }
+  
+  if (state.isValid === false) {
+    return (
+      <div>
+        <span className="text-red-500">❌ Invalid</span>
+        <ul className="text-red-400 text-sm">
+          {state.errors.map(error => (
+            <li key={error.path}>{error.message}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  
+  return <span className="text-gray-400">◯ Not validated</span>;
+};
+
+// Form integration
+const TreeBuilderForm = () => {
+  const { register, watch } = useForm();
+  const { validationState, debouncedValidate } = useRealtimeValidation();
+  const treeState = watch(); // Watch all form changes
+
+  useEffect(() => {
+    // Trigger validation on any form change
+    debouncedValidate(treeState, propertyState);
+  }, [treeState, propertyState, debouncedValidate]);
+
+  return (
+    <form>
+      <ValidationIndicator state={validationState} />
+      <input {...register("componentType")} />
+      {/* Form fields */}
+    </form>
+  );
+};
+```
 
 **Future Phase Features:**
 - Live dashboard preview via iframe

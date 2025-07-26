@@ -321,6 +321,38 @@ make db-reset
 - Set up Makefile with all development commands
 - Test Docker development workflow
 
+### 2025-01-26 - Real-Time Validation Architecture
+**What was accomplished:**
+- Clarified validation approach: real-time backend validation with debouncing
+- Designed validation state management and visual indicators
+- Updated architecture documentation with implementation details
+
+**Decisions made:**
+- **Real-Time Validation**: Debounced validation on every form change (500ms delay)
+- **Visual Feedback**: Validation indicators throughout UI (⏳ validating, ✅ valid, ❌ invalid, ◯ not validated)
+- **Frontend State Only**: No JSON Schema validation on frontend since only combined states are valid
+- **Pydantic Errors**: Display detailed validation errors from backend in UI
+
+**Rationale:**
+- Only combined tree + property states form valid Vizro dashboard
+- Frontend cannot validate individual form states against schema
+- Real-time feedback improves user experience
+- Debouncing prevents excessive API calls during typing
+
+**Implementation Pattern:**
+```typescript
+// Watch form changes and trigger debounced validation
+const treeState = watch();
+useEffect(() => {
+  debouncedValidate(treeState, propertyState);
+}, [treeState, propertyState]);
+```
+
+**Next actions:**
+- Implement useRealtimeValidation hook
+- Create ValidationIndicator component
+- Design backend validation API endpoint
+
 ### [Date] - [Milestone/Feature]
 *Template for future entries*
 

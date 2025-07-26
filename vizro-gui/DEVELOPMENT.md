@@ -9,7 +9,7 @@ This document tracks the development progress, decisions, and learnings for the 
 **Context:**
 - Fork created from main Vizro monorepo for GUI builder development
 - Goal: Replace entire monorepo with single GUI application
-- Development focused in `vizro-gui-analysis/` folder
+- Development focused in `vizro-gui/` folder
 
 **Initial Analysis:**
 - Reviewed existing Vizro schema (`vizro-core/schemas/0.1.43.json`)

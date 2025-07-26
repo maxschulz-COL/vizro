@@ -8,10 +8,11 @@ The Vizro GUI Builder is a new application that provides a form-based interface 
 
 **Key Goals:**
 - Form-based dashboard creation without coding
-- Real-time preview of dashboard changes
-- Export to standard Vizro configuration formats
+- Two-state interface: component tree building + property editing
+- Generate valid Vizro JSON from form inputs
 - Template system for quick dashboard creation
 - Schema-driven form interface for component tree and property editing
+- Future: Live preview via WebAssembly + iframe (backend-generated link)
 
 ## Architecture
 
@@ -20,7 +21,7 @@ The Vizro GUI Builder is a new application that provides a form-based interface 
 **Frontend:**
 - React 18 + TypeScript
 - State Management: Zustand
-- UI Framework: Mantine or Chakra UI
+- UI Framework: shadcn/ui + Tailwind CSS
 - Form Generation: Custom forms derived from JSON Schema (avoiding limiting JSON form libraries)
 - Form Handling: React Hook Form + JSON Schema validation
 - Build Tool: Vite
@@ -34,11 +35,12 @@ The Vizro GUI Builder is a new application that provides a form-based interface 
 
 ### Core Components
 
-1. **Tree Builder Form** (Left Panel): Schema-driven form for building component hierarchy
-2. **Live Preview Canvas** (Center): Real-time dashboard preview
-3. **Property Editor Form** (Right Panel): Schema-driven form for editing selected component properties (non-children)
-4. **Template System**: Pre-built dashboard templates
-5. **Schema Form Engine**: Custom form generation from JSON Schema definitions
+1. **Top Navigation Bar**: Login, user account, save/load, export options
+2. **Tree Builder Form** (Left Panel): Schema-driven form for building component hierarchy
+3. **Central Preview**: JSON/YAML output view (future: live dashboard preview via WebAssembly iframe)
+4. **Property Editor Form** (Right Panel): Schema-driven form for editing selected component properties (non-children)
+5. **Template System**: Pre-built dashboard templates
+6. **Schema Form Engine**: Custom form generation from JSON Schema definitions
 
 ### Key Files
 
@@ -78,15 +80,17 @@ The GUI builder leverages the existing Vizro JSON schema (`vizro-core/schemas/`)
 1. **Schema Form Engine**: Custom form generation from JSON Schema (avoiding limiting libraries)
 2. **Tree Builder**: Left panel form for component hierarchy creation
 3. **Property Editor**: Right panel form for component detail editing
-4. **Preview System**: Central canvas with real-time dashboard preview
+4. **JSON Generation**: Combine tree + properties to generate valid Vizro JSON
 5. **Two-State Management**: Tree building mode vs. component detail editing mode
-6. **Export System**: JSON/YAML configuration export
+6. **Configuration Display**: Show generated JSON/YAML output
+7. **Future Phase**: Live preview via WebAssembly + iframe integration
 
 ## Key Design Principles
 
 - **Schema-Driven**: All forms generated from Vizro JSON schema
 - **Form-Based**: Clean form interface over drag-and-drop complexity
 - **Dual-Mode**: Tree building (hierarchy) vs. Property editing (details)
-- **Real-time**: Immediate feedback and live preview
+- **JSON-Focused**: Generate valid Vizro JSON from form inputs
 - **Custom Forms**: Avoid limiting JSON form libraries, build tailored forms
-- **Performance**: Optimized for large, complex dashboards
+- **Phased Approach**: Start with forms + JSON output, add preview later
+- **Future-Ready**: Architecture prepared for WebAssembly preview integration

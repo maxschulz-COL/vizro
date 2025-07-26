@@ -8,22 +8,28 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                    Vizro GUI Builder                        │
 ├─────────────────────────────────────────────────────────────┤
-│  Frontend (React/TypeScript)                               │
-│  ├── Tree Builder Form (Left Panel)                       │
-│  ├── Live Preview Canvas (Center)                         │
-│  ├── Property Editor Form (Right Panel)                   │
-│  ├── Schema Form Engine                                    │
-│  └── Configuration Export/Import                           │
+│  Frontend Layout (React/TypeScript + shadcn/ui)            │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ Top Navigation Bar (Login, Save, Export, etc.)         │ │
+│  ├─────────────────┬─────────────────┬─────────────────────┤ │
+│  │ Tree Builder    │ Central Preview │ Property Editor     │ │
+│  │ Form            │ (JSON/YAML +    │ Form                │ │
+│  │ (Left Panel)    │ Future: iframe) │ (Right Panel)       │ │
+│  │                 │ (Center Panel)  │                     │ │
+│  └─────────────────┴─────────────────┴─────────────────────┘ │
+│  Components: Schema Form Engine, Export/Import             │
 ├─────────────────────────────────────────────────────────────┤
 │  Backend Services (FastAPI/Python)                         │
+│  ├── Authentication & User Management                      │
 │  ├── Schema Validation Service                             │
-│  ├── Dashboard Preview Generator                           │
+│  ├── JSON Configuration Generator                          │
 │  ├── Template Management                                   │
-│  └── Configuration Persistence                             │
+│  ├── Configuration Persistence                             │
+│  └── [Future] WebAssembly Preview Link Generator           │
 ├─────────────────────────────────────────────────────────────┤
 │  Data Layer                                                │
 │  ├── PostgreSQL (Dashboards, Templates, Users)            │
-│  ├── Redis (Session State, Preview Cache)                 │
+│  ├── Redis (Session State)                                │
 │  └── S3/MinIO (Assets, Exports)                           │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -33,13 +39,45 @@
 ### Technology Stack
 - **Framework**: React 18 + TypeScript
 - **State Management**: Zustand (lightweight, performant)
-- **UI Framework**: Mantine or Chakra UI (component consistency)
+- **UI Framework**: shadcn/ui + Tailwind CSS (modern, customizable, excellent form components)
 - **Form Generation**: Custom schema-driven forms (avoiding limiting JSON form libraries)
 - **Form Handling**: React Hook Form + JSON Schema validation
-- **Layout**: CSS Grid/Flexbox for three-panel layout (Left Form | Center Canvas | Right Form)
+- **Layout**: CSS Grid with Tailwind for app layout (Top Bar | Left Form | Central Preview | Right Form)
 - **Build Tool**: Vite (fast development, modern bundling)
 
 ### Component Architecture
+
+#### 0. Top Navigation Bar
+```typescript
+interface TopNavigationBar {
+  // User authentication
+  user: User | null;
+  isAuthenticated: boolean;
+  login: () => void;
+  logout: () => void;
+  
+  // Dashboard management
+  currentDashboard: Dashboard | null;
+  saveDashboard: () => Promise<void>;
+  loadDashboard: (id: string) => Promise<void>;
+  newDashboard: () => void;
+  
+  // Export/Import
+  exportConfig: (format: 'json' | 'yaml') => void;
+  importConfig: (file: File) => Promise<void>;
+  
+  // Application settings
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+}
+```
+
+**Key Features:**
+- User authentication and account management
+- Dashboard save/load/new operations
+- Configuration export/import functionality
+- Theme toggle and application settings
+- Responsive design for different screen sizes
 
 #### 1. Tree Builder Form (Left Panel)
 ```typescript
@@ -112,31 +150,60 @@ interface SchemaFormEngine {
 - Better UX than generic form solutions
 - Full control over validation and error display
 
-#### 4. Live Preview Canvas (Center)
+#### 4. Central Preview Panel
 ```typescript
-interface PreviewCanvas {
-  previewMode: 'desktop' | 'tablet' | 'mobile';
-  previewData: DataSource[];
+interface CentralPreviewPanel {
+  currentConfig: VizroDashboard;
+  validationErrors: ValidationError[];
+  viewMode: 'json' | 'yaml' | 'preview'; // preview for future iframe
   
-  // Preview generation
-  generatePreview(config: VizroDashboard): Promise<PreviewResult>;
-  updatePreviewData(dataSource: DataSource): void;
+  // JSON/YAML generation
+  generateVizroJSON(treeData: ComponentTree, propertyData: ComponentProperties): VizroDashboard;
+  validateConfiguration(config: VizroDashboard): ValidationResult;
   
-  // Real-time sync with forms
-  syncWithTreeChanges(treeChanges: ComponentTreeChange[]): void;
-  syncWithPropertyChanges(propertyChanges: PropertyChange[]): void;
+  // Output formatting
+  formatJSON(config: VizroDashboard): string;
+  formatYAML(config: VizroDashboard): string;
   
-  // Visual feedback
-  highlightSelectedComponent(componentPath: ComponentPath): void;
-  showValidationErrors(errors: ValidationError[]): void;
+  // Display controls
+  toggleViewMode: (mode: 'json' | 'yaml' | 'preview') => void;
+  copyToClipboard: (content: string) => void;
+  
+  // Future: iframe preview
+  previewURL: string | null;
+  refreshPreview: () => void;
 }
 ```
 
-**Key Features:**
-- Real-time preview updates from both left and right forms
-- Component highlighting when selected in tree
-- Visual validation error display
-- Responsive preview modes
+**Current Phase Features:**
+- Real-time JSON/YAML generation from form inputs
+- Syntax highlighting for JSON/YAML output
+- Validation error display with line numbers
+- View mode toggle (JSON/YAML)
+- Copy to clipboard functionality
+
+**Future Phase Features:**
+- Live dashboard preview via iframe
+- Backend-generated WebAssembly preview links
+
+#### 5. Future: WebAssembly Preview
+```typescript
+interface WebAssemblyPreview {
+  previewURL: string | null;
+  
+  // Preview generation (future phase)
+  requestPreviewLink(config: VizroDashboard): Promise<string>;
+  refreshPreview(): void;
+  
+  // iframe integration
+  renderPreviewIFrame(url: string): ReactElement;
+}
+```
+
+**Planned Features:**
+- Backend-generated WebAssembly preview links
+- iframe integration for live dashboard preview
+- Real-time updates when configuration changes
 
 ### State Management Strategy
 
@@ -147,10 +214,10 @@ interface AppState {
   dashboard: VizroDashboard;
   updateDashboard: (updates: Partial<VizroDashboard>) => void;
   
-  // UI state - two-mode system
-  mode: 'tree-building' | 'property-editing';
+  // UI state - two-state system
   selectedComponentPath: ComponentPath | null;
-  activePanel: 'tree' | 'properties' | 'both';
+  activeMode: 'tree-building' | 'property-editing';
+  outputFormat: 'json' | 'yaml';
   
   // Tree building state
   expandedTreeNodes: ComponentPath[];
@@ -166,16 +233,21 @@ interface AppState {
   undo: () => void;
   redo: () => void;
   
+  // JSON output
+  generatedJSON: string;
+  generatedYAML: string;
+  
   // Validation
   globalValidationErrors: ValidationError[];
   validateDashboard: () => Promise<ValidationResult>;
+  generateOutput: () => void;
 }
 ```
 
 #### Component-Level State
 - Local form state for tree building operations
 - Local form state for property editing
-- Preview loading and error states
+- JSON output display state (syntax highlighting, error positions)
 - Form validation states per panel
 
 ## Backend Architecture
@@ -211,9 +283,13 @@ async def create_dashboard(dashboard: DashboardCreate) -> Dashboard:
 async def update_dashboard(dashboard_id: UUID, updates: DashboardUpdate) -> Dashboard:
     """Update dashboard configuration"""
 
-@router.post("/api/v1/dashboards/{dashboard_id}/preview")
-async def generate_preview(dashboard_id: UUID, data: PreviewData) -> PreviewResult:
-    """Generate dashboard preview with data"""
+@router.post("/api/v1/dashboards/{dashboard_id}/generate-json")
+async def generate_json(dashboard_id: UUID) -> VizroDashboard:
+    """Generate valid Vizro JSON from current state"""
+
+@router.post("/api/v1/dashboards/{dashboard_id}/preview-link")
+async def generate_preview_link(dashboard_id: UUID) -> PreviewLinkResponse:
+    """[Future] Generate WebAssembly preview link"""
 ```
 
 #### 3. Template System
@@ -394,15 +470,15 @@ services:
 ## Development Phases
 
 ### Phase 1: Core Infrastructure (4-6 weeks)
-- Three-panel layout (Left Form | Center Canvas | Right Form)
+- Four-panel layout (Top Bar | Left Form | Central Preview | Right Form)
 - Custom Schema Form Engine (avoiding limiting JSON form libraries)
-- Backend API structure
-- Database models and migrations
+- User authentication and dashboard management
+- Backend API structure and database models
 
 ### Phase 2: Form-Based Component System (6-8 weeks)
 - Tree Builder Form (left panel) for component hierarchy
 - Property Editor Form (right panel) for component details
-- Live preview canvas with real-time updates
+- JSON/YAML output generation and display
 - Basic validation and error handling
 
 ### Phase 3: Advanced Form Features (4-6 weeks)
@@ -417,6 +493,11 @@ services:
 - Security hardening
 - Documentation and user guides
 
-**Total Estimated Timeline: 17-24 weeks (4-6 months)**
+### Phase 5: Live Preview Integration (Future)
+- WebAssembly integration
+- Backend preview link generation
+- iframe-based live dashboard preview
+
+**Current Phase Timeline: 17-24 weeks (4-6 months)**
 
 This architecture provides a solid foundation for building a production-grade Vizro GUI builder that can scale with user needs while maintaining performance and reliability.

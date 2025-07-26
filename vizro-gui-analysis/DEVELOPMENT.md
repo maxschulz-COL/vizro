@@ -42,16 +42,17 @@ This document tracks the development progress, decisions, and learnings for the 
 ## Next Steps
 
 **Immediate Priorities:**
-1. Technology stack validation and setup
-2. Proof of concept for Schema Form Engine
-3. Three-panel layout implementation (Left | Center | Right)
+1. Technology stack validation and setup (React + TypeScript + shadcn/ui + Tailwind)
+2. Four-panel app layout (Top Bar | Left Form | Central Preview | Right Form)
+3. Proof of concept for Schema Form Engine
 4. Tree Builder and Property Editor form prototypes
 
 **Development Phases Planned:**
 - **Phase 1** (4-6 weeks): Core infrastructure and custom form engine
-- **Phase 2** (6-8 weeks): Tree Builder and Property Editor forms
+- **Phase 2** (6-8 weeks): Tree Builder and Property Editor forms with JSON output
 - **Phase 3** (4-6 weeks): Advanced form features and two-state management
 - **Phase 4** (3-4 weeks): Production readiness and testing
+- **Phase 5** (Future): WebAssembly preview integration via iframe
 
 ---
 
@@ -83,8 +84,37 @@ This document tracks the development progress, decisions, and learnings for the 
 
 **Next actions:**
 - Begin Schema Form Engine prototype
-- Design three-panel layout structure
+- Design two-panel layout structure with JSON output
 - Research form validation patterns for complex schemas
+
+### 2025-01-26 - Preview Strategy: Phased Approach
+**What was accomplished:**
+- Decided to defer live preview to future phase
+- Focus current phase on form-based JSON generation
+- Planned WebAssembly + iframe integration for later
+
+**Decisions made:**
+- **Current Phase**: Two forms + JSON output (no live preview yet)
+- **Future Phase**: WebAssembly preview via backend-generated iframe links
+- **JSON-First**: Ensure forms generate valid Vizro JSON before adding preview
+- **Simpler Layout**: Left form | Right form + JSON display (not three panels)
+
+**Rationale:**
+- Reduces complexity of initial implementation
+- Ensures solid foundation before adding preview
+- WebAssembly approach will provide better performance than client-side rendering
+- Focus on core form engine without preview distractions
+
+**Architecture Updated:**
+- Removed live preview from current phase documentation
+- Added JSON output display as core component
+- Updated layout from three-panel to two-panel + output
+- Added future WebAssembly preview phase
+
+**Next actions:**
+- Focus on Schema Form Engine and JSON generation
+- Design layout for forms + JSON output display
+- Plan WebAssembly integration for future phase
 
 ### [Date] - [Milestone/Feature]
 *Template for future entries*
@@ -141,7 +171,14 @@ This document tracks the development progress, decisions, and learnings for the 
 **Context:** Need modern, maintainable frontend with good tooling  
 **Decision:** React 18 + TypeScript with Zustand state management  
 **Rationale:** Strong ecosystem, TypeScript safety, Zustand simplicity over Redux  
-**Alternatives considered:** Vue.js, Svelte, Redux Toolkit  
+**Alternatives considered:** Vue.js, Svelte, Redux Toolkit
+
+### Decision 7: shadcn/ui + Tailwind CSS
+**Date:** 2025-01-26  
+**Context:** Need high-quality, customizable UI components for forms  
+**Decision:** shadcn/ui component library with Tailwind CSS  
+**Rationale:** Excellent form components, highly customizable, copy-paste approach, modern design, great TypeScript support  
+**Alternatives considered:** Mantine, Chakra UI, Ant Design, headless UI  
 
 ### Decision 6: FastAPI Backend
 **Date:** 2025-01-26  

@@ -42,10 +42,11 @@ This document tracks the development progress, decisions, and learnings for the 
 ## Next Steps
 
 **Immediate Priorities:**
-1. Technology stack validation and setup (React + TypeScript + shadcn/ui + Tailwind)
-2. Four-panel app layout (Top Bar | Left Form | Central Preview | Right Form)
-3. Proof of concept for Schema Form Engine
-4. Tree Builder and Property Editor form prototypes
+1. Docker development environment setup (docker-compose + Makefile)
+2. Technology stack validation and setup (React + TypeScript + shadcn/ui + Tailwind)
+3. Four-panel app layout (Top Bar | Left Form | Central Preview | Right Form)
+4. Proof of concept for Dynamic Schema Form Engine (zero hardcoding)
+5. Tree Builder and Property Editor form prototypes
 
 **Development Phases Planned:**
 - **Phase 1** (4-6 weeks): Core infrastructure and custom form engine
@@ -112,9 +113,213 @@ This document tracks the development progress, decisions, and learnings for the 
 - Added future WebAssembly preview phase
 
 **Next actions:**
-- Focus on Schema Form Engine and JSON generation
-- Design layout for forms + JSON output display
+- Focus on Schema Form Engine and backend validation integration
+- Design layout for forms + validated output display
 - Plan WebAssembly integration for future phase
+
+### 2025-01-26 - Backend Validation Strategy
+**What was accomplished:**
+- Clarified validation approach: backend-driven via Pydantic
+- Defined API endpoints for combining and validating frontend states
+- Updated architecture to reflect validation flow
+
+**Decisions made:**
+- **Backend Validation**: Frontend sends raw tree + property states to backend
+- **Pydantic Integration**: Use Dashboard.model_validate for validation
+- **Minimal Frontend Validation**: Only basic field types and required fields
+- **Backend Response**: Return validated config OR detailed validation errors
+
+**Rationale:**
+- Ensures 100% compatibility with Vizro schema validation
+- Centralizes complex validation logic in Python/Pydantic
+- Reduces frontend complexity and bundle size
+- Provides authoritative validation source
+
+**API Design:**
+```python
+@router.post("/api/v1/validate")
+async def validate_dashboard(tree_state: ComponentTree, property_state: ComponentProperties) -> ValidationResult:
+    """Combine frontend states and validate via Dashboard.model_validate"""
+```
+
+**Frontend Flow:**
+1. Tree form updates → tree state
+2. Property form updates → property state  
+3. Send both states to backend `/validate`
+4. Backend combines + validates via Pydantic
+5. Display validated JSON or validation errors
+
+**Next actions:**
+- Define ComponentTree and ComponentProperties data structures
+- Implement backend validation endpoint
+- Design frontend validation error display
+
+### 2025-01-26 - CRITICAL: Zero Hardcoding Architecture
+**What was accomplished:**
+- Established absolute requirement: NO hardcoded field names or component types
+- Designed schema-driven architecture that works with ANY schema version
+- Defined component field registry pattern for extensibility
+
+**CRITICAL Requirements:**
+- **Zero Hardcoding**: No field names, component names, or types in code
+- **Version Agnostic**: Must work with 0.1.43 → 0.1.44 → future versions automatically
+- **Schema Discovery**: All forms generated dynamically from schema analysis
+- **Component Registry**: Specific field renderers + generic fallbacks for standard types
+
+**Architecture Patterns:**
+
+**TREE STRUCTURE (ZERO hardcoding allowed):**
+```typescript
+// ❌ WRONG - Hardcoded tree logic
+if (componentType === 'Graph') {
+  return <GraphTreeNode />
+} else if (componentType === 'Table') {
+  return <TableTreeNode />
+}
+
+// ✅ RIGHT - Schema-driven tree
+const TreeNode = ({ componentSchema, path }) => {
+  // Extract ALL possible children from schema - no hardcoding
+  const childrenProperties = extractAllChildrenProperties(componentSchema);
+  const validChildTypes = extractValidChildTypes(componentSchema);
+  const currentChildren = getCurrentChildren(path, childrenProperties);
+  
+  return (
+    <GenericTreeNode 
+      schema={componentSchema} 
+      childrenProperties={childrenProperties}
+      validChildTypes={validChildTypes}
+      currentChildren={currentChildren}
+    />
+  );
+};
+```
+
+**PROPERTY EDITING (Specific renderers allowed and encouraged):**
+```typescript
+// ✅ RIGHT - Specific property renderers for complex cases
+const GraphPropertyEditor = ({ graphComponent }) => {
+  return (
+    <div>
+      <FigureSelector 
+        value={graphComponent.figure} 
+        onChange={handleFigureChange}
+        options={plotlyExpressCharts} 
+      />
+      <DataFrameSelector 
+        value={graphComponent.data_frame}
+        onChange={handleDataFrameChange}
+      />
+      <ChartArgumentsEditor 
+        figure={graphComponent.figure}
+        args={graphComponent.chart_args}
+        onChange={handleArgsChange}
+      />
+    </div>
+  );
+};
+
+// ✅ RIGHT - Registry with specific + fallback pattern
+fieldRegistry.registerSpecific(/.*\.graph\.properties/, GraphPropertyEditor);
+fieldRegistry.registerSpecific(/.*\.table\.properties/, TablePropertyEditor);
+fieldRegistry.registerSpecific(/.*\.card\.properties/, CardPropertyEditor);
+
+// ✅ RIGHT - Generic fallbacks for unknown component types
+fieldRegistry.registerGeneric('string', TextInput);
+fieldRegistry.registerGeneric('number', NumberInput);
+fieldRegistry.registerGeneric('boolean', CheckboxInput);
+fieldRegistry.registerGeneric('array', ArrayEditor);
+fieldRegistry.registerGeneric('object', ObjectEditor);
+
+// When schema 0.1.44 introduces "NewComponent":
+// 1. Tree automatically shows it based on schema structure
+// 2. Property editor automatically uses generic fallbacks
+// 3. Later, we can add NewComponentPropertyEditor for better UX
+```
+
+**Two-Level Architecture:**
+
+**1. TREE STRUCTURE LEVEL (ZERO hardcoding):**
+- Schema analysis extracts ALL possible children for each component type
+- Schema analysis determines which child types are valid for each parent
+- Generic tree rendering based on schema-defined children properties
+- Tree knows about ALL children relationships purely from schema
+- NO component-specific logic in tree building
+- Works with any new component types and relationships in future schemas
+
+**2. PROPERTY EDITING LEVEL (Specific renderers + smart fallbacks):**
+- **Known components**: Custom property editors (Graph figure selection, Table formatting, Card styling)
+- **Unknown components**: Automatic fallback to generic renderers based on JSON Schema types
+- **Progressive enhancement**: Start with fallbacks, add specific renderers later for better UX
+- **Registry system**: Maps schema patterns to renderers with graceful degradation
+
+**Perfect Future-Proofing:**
+When schema 0.1.44 introduces "VideoComponent":
+1. **Tree**: Automatically handles it (schema-driven structure)
+2. **Properties**: Uses generic fallbacks (string → TextInput, boolean → Checkbox)
+3. **Later**: Add VideoPropertyEditor for rich video configuration UI
+4. **Zero breaking changes**: App continues working immediately
+
+**Success Metric:**
+When schema 0.1.44 is released, the application should:
+1. Load new schema automatically
+2. Generate forms for any new component types
+3. Handle new properties without code changes
+4. Use appropriate renderers (specific or generic)
+5. Maintain full functionality with ZERO code modifications
+
+**Next actions:**
+- Design component field registry architecture
+- Implement schema analysis and extraction utilities
+- Create dynamic form generation engine prototype
+
+### 2025-01-26 - Docker-Based Development Strategy
+**What was accomplished:**
+- Decided to use Docker-based development from day one
+- Designed docker-compose setup for all services
+- Created Makefile for convenient development commands
+
+**Decisions made:**
+- **Docker Development**: All services containerized from start
+- **Makefile Interface**: Simple commands (`make up`, `make test`, etc.)
+- **Environment Consistency**: Same containers for dev/staging/production
+- **Service Isolation**: Frontend, Backend, PostgreSQL, Redis in separate containers
+
+**Architecture Benefits:**
+- **No Environment Issues**: Identical setup across all developers
+- **Easy Onboarding**: New developers just need `make up`
+- **Deployment Ready**: Production images built from same Dockerfiles
+- **Service Management**: Easy debugging and log viewing per service
+- **Database Management**: Automated PostgreSQL setup and migrations
+
+**Development Workflow:**
+```bash
+# Start entire stack
+make up
+
+# View logs
+make logs-backend
+make logs-frontend
+
+# Run tests
+make test
+
+# Database operations
+make migrate
+make seed
+make db-reset
+```
+
+**Production Benefits:**
+- Same containers used in development and production
+- Infrastructure as code with docker-compose files
+- Easy scaling and orchestration
+- No deployment surprises or environment differences
+
+**Next actions:**
+- Create initial docker-compose.yml and Dockerfiles
+- Set up Makefile with all development commands
+- Test Docker development workflow
 
 ### [Date] - [Milestone/Feature]
 *Template for future entries*

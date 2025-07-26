@@ -62,6 +62,11 @@ interface TopNavigationBar {
   loadDashboard: (id: string) => Promise<void>;
   newDashboard: () => void;
   
+  // User account navigation
+  openDashboardLibrary: () => void;
+  openDatasetManager: () => void;
+  openAccountSettings: () => void;
+  
   // Export/Import
   exportConfig: (format: 'json' | 'yaml') => void;
   importConfig: (file: File) => Promise<void>;
@@ -75,95 +80,145 @@ interface TopNavigationBar {
 **Key Features:**
 - User authentication and account management
 - Dashboard save/load/new operations
+- Quick access to dashboard library and dataset manager
 - Configuration export/import functionality
 - Theme toggle and application settings
 - Responsive design for different screen sizes
 
-#### 1. Tree Builder Form (Left Panel)
+#### 1. Tree Builder Form (Left Panel) - SCHEMA DRIVEN
 ```typescript
 interface TreeBuilderForm {
-  // Component hierarchy state
-  dashboardConfig: VizroDashboard;
+  // Current schema and extracted metadata
+  currentSchema: JSONSchema;
+  componentDefinitions: Map<string, ComponentDefinition>;
+  
+  // Component hierarchy state (derived from schema)
+  dashboardConfig: any; // Dynamic structure based on schema
   selectedComponentPath: ComponentPath | null;
   
-  // Tree building operations
-  addComponent(parentPath: ComponentPath, type: ComponentType): void;
+  // Dynamic tree building operations (NO hardcoded types)
+  addComponent(parentPath: ComponentPath, componentType: string): void;
   removeComponent(path: ComponentPath): void;
   moveComponent(fromPath: ComponentPath, toPath: ComponentPath): void;
   selectComponent(path: ComponentPath): void;
   
-  // Schema-driven form generation
-  renderAddComponentForm(parentSchema: JSONSchema): ReactElement;
-  getAvailableChildTypes(parentType: ComponentType): ComponentType[];
+  // Schema-driven form generation (ZERO hardcoding)
+  renderAddComponentForm(parentSchemaPath: string): ReactElement;
+  getAvailableChildTypes(parentSchemaPath: string): string[];
+  extractHierarchicalFields(componentSchema: JSONSchemaDefinition): HierarchicalField[];
+  
+  // Schema analysis for tree structure
+  isContainerComponent(componentType: string): boolean;
+  getChildrenProperty(componentType: string): string | null;
+  getComponentDisplayName(componentType: string): string;
 }
 ```
 
-**Key Features:**
-- Schema-driven component addition forms
-- Hierarchical component tree visualization
-- Context-aware component type filtering
-- Real-time validation for tree structure
+**CRITICAL Features - NO HARDCODING:**
+- **Schema Discovery**: Extract all component types from schema dynamically
+- **Dynamic Hierarchy**: Determine parent-child relationships from schema definitions
+- **Context-Aware Filtering**: Use schema to determine valid child types for any parent
+- **Flexible Tree Structure**: Adapt to any schema changes automatically
+- **Generic Component Handling**: No hardcoded knowledge of "Graph", "Table", etc.
 
-#### 2. Property Editor Form (Right Panel)
+#### 2. Property Editor Form (Right Panel) - SCHEMA DRIVEN
 ```typescript
 interface PropertyEditorForm {
-  selectedComponent: Component | null;
-  schemaDefinition: JSONSchema;
-  validationErrors: ValidationError[];
+  // Current schema and component context
+  currentSchema: JSONSchema;
+  selectedComponentType: string | null;
+  selectedComponentPath: ComponentPath | null;
+  
+  // Dynamic property extraction (NO hardcoded properties)
+  componentPropertySchema: JSONSchemaDefinition | null;
+  excludedFields: string[]; // Children fields excluded dynamically
   
   // Property editing (non-children properties only)
-  updateProperty(path: string, value: any): void;
-  validateProperty(path: string, value: any): ValidationResult;
+  updateProperty(propertyPath: string, value: any): void;
+  validateProperty(propertyPath: string, value: any): ValidationResult;
   
-  // Custom form generation from schema
-  renderPropertyForm(schema: JSONSchema): ReactElement;
+  // Schema-driven form generation (ZERO hardcoding)
+  renderPropertyForm(componentSchemaPath: string): ReactElement;
+  extractNonHierarchicalFields(componentSchema: JSONSchemaDefinition): PropertyField[];
   handleConditionalProperties(dependencies: SchemaDependencies): void;
+  
+  // Dynamic field discovery
+  getPropertyFields(componentType: string): PropertyField[];
+  isHierarchicalField(fieldName: string, fieldSchema: JSONSchemaProperty): boolean;
+  getFieldDisplayName(fieldPath: string, fieldSchema: JSONSchemaProperty): string;
 }
 ```
 
-**Advanced Features:**
-- Custom form fields generated from JSON Schema
-- Conditional property visibility based on other field values
-- Inline validation with helpful error messages
-- Excludes children/hierarchy properties (handled by Tree Builder)
+**CRITICAL Features - NO HARDCODING:**
+- **Dynamic Property Discovery**: Extract all non-hierarchical properties from schema
+- **Automatic Field Exclusion**: Dynamically identify and exclude children/hierarchy fields
+- **Schema-Driven Forms**: Generate forms for ANY component type without hardcoded knowledge
+- **Conditional Logic**: Handle schema-defined conditional properties dynamically
+- **Field Type Mapping**: Map schema types to appropriate form controls automatically
 
-#### 3. Schema Form Engine
+#### 3. Dynamic Schema Form Engine (ZERO HARDCODING)
 ```typescript
 interface SchemaFormEngine {
-  // Core form generation
-  generateFormFromSchema(schema: JSONSchema): FormDefinition;
-  renderFormField(fieldSchema: JSONSchemaProperty): ReactElement;
+  // Schema loading and parsing
+  loadSchema(version: string): Promise<JSONSchema>;
+  parseSchemaDefinitions(schema: JSONSchema): ComponentDefinitions;
   
-  // Custom field types
-  registerCustomField(type: string, renderer: FieldRenderer): void;
-  getFieldRenderer(type: string): FieldRenderer;
+  // Dynamic form generation (NO hardcoded field names)
+  generateFormFromSchema(schemaDefinition: JSONSchemaDefinition): FormDefinition;
+  renderFormField(fieldSchema: JSONSchemaProperty, fieldPath: string): ReactElement;
   
-  // Validation
+  // Component field registry (specific + fallback)
+  registerSpecificField(schemaPattern: string, renderer: FieldRenderer): void;
+  registerGenericField(jsonSchemaType: string, renderer: FieldRenderer): void;
+  getFieldRenderer(fieldSchema: JSONSchemaProperty): FieldRenderer;
+  
+  // Schema analysis
+  extractComponentTypes(schema: JSONSchema): ComponentType[];
+  getFieldProperties(componentType: string): PropertySchema[];
+  getChildrenFields(componentType: string): ChildrenSchema[];
+  
+  // Version agnostic validation
   validateFieldValue(value: any, schema: JSONSchemaProperty): ValidationResult;
   validateFormData(data: object, schema: JSONSchema): ValidationResult;
 }
 ```
 
-**Design Goals:**
-- Avoid limitations of existing JSON form libraries
-- Custom field renderers for complex Vizro-specific types
-- Better UX than generic form solutions
-- Full control over validation and error display
+**CRITICAL Design Goals:**
+- **ZERO HARDCODING**: No field names, component names, or types hardcoded
+- **Schema Version Agnostic**: Works with 0.1.43, 0.1.44, future versions automatically
+- **Two-Level Architecture**:
+  - **Tree Level**: ZERO hardcoding - purely schema-driven hierarchy
+  - **Property Level**: Specific renderers encouraged for complex components
+- **Component Registry Pattern**: 
+  - Specific renderers for complex property editing (e.g., Graph figure selection with Plotly Express charts)
+  - Generic fallbacks for standard types (string → TextInput, number → NumberInput)
+- **Schema-Driven Discovery**: Extract all component types and properties from schema
+- **Extensible**: Easy to add new specific property renderers without touching tree logic
+
+**Example - Graph Component:**
+- **Tree Level**: Generic handling - schema determines if Graph can have children
+- **Property Level**: Custom GraphPropertyEditor with figure selection, data_frame picker, chart arguments
 
 #### 4. Central Preview Panel
 ```typescript
 interface CentralPreviewPanel {
-  currentConfig: VizroDashboard;
+  // Current states from forms
+  treeState: ComponentTree;
+  propertyState: ComponentProperties;
+  
+  // Backend validation results
+  validatedConfig: VizroDashboard | null;
   validationErrors: ValidationError[];
+  isValidating: boolean;
+  
   viewMode: 'json' | 'yaml' | 'preview'; // preview for future iframe
   
-  // JSON/YAML generation
-  generateVizroJSON(treeData: ComponentTree, propertyData: ComponentProperties): VizroDashboard;
-  validateConfiguration(config: VizroDashboard): ValidationResult;
+  // Backend validation
+  validateAndGenerate: (treeData: ComponentTree, propertyData: ComponentProperties) => Promise<ValidationResult>;
   
-  // Output formatting
-  formatJSON(config: VizroDashboard): string;
-  formatYAML(config: VizroDashboard): string;
+  // Output formatting (after backend validation)
+  formatJSON: (config: VizroDashboard) => string;
+  formatYAML: (config: VizroDashboard) => string;
   
   // Display controls
   toggleViewMode: (mode: 'json' | 'yaml' | 'preview') => void;
@@ -176,17 +231,271 @@ interface CentralPreviewPanel {
 ```
 
 **Current Phase Features:**
-- Real-time JSON/YAML generation from form inputs
-- Syntax highlighting for JSON/YAML output
-- Validation error display with line numbers
+- Send frontend states to backend for validation
+- Backend combines states and validates via Dashboard.model_validate
+- Display validated JSON/YAML output from backend
+- Show validation errors with line numbers and field paths
 - View mode toggle (JSON/YAML)
 - Copy to clipboard functionality
+
+**Validation Flow:**
+1. Frontend forms update tree/property states
+2. Send both states to backend `/validate` endpoint
+3. Backend combines states and runs Dashboard.model_validate
+4. Return validated config OR detailed validation errors
+5. Frontend displays result in preview panel
 
 **Future Phase Features:**
 - Live dashboard preview via iframe
 - Backend-generated WebAssembly preview links
 
-#### 5. Future: WebAssembly Preview
+#### 5. User Account Management System
+```typescript
+interface UserAccountSystem {
+  // Dashboard library
+  userDashboards: Dashboard[];
+  createDashboard: (name: string, config: VizroDashboard) => Promise<Dashboard>;
+  updateDashboard: (id: string, config: VizroDashboard) => Promise<Dashboard>;
+  deleteDashboard: (id: string) => Promise<void>;
+  duplicateDashboard: (id: string, newName: string) => Promise<Dashboard>;
+  
+  // Dataset management
+  userDatasets: Dataset[];
+  uploadDataset: (file: File, name: string) => Promise<Dataset>;
+  renameDataset: (id: string, newName: string) => Promise<Dataset>;
+  deleteDataset: (id: string) => Promise<void>;
+  getDatasetInfo: (id: string) => Promise<DatasetInfo>;
+  
+  // Account settings
+  updateUserProfile: (profile: UserProfile) => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
+  
+  // Usage limits
+  checkStorageLimit: () => Promise<StorageUsage>;
+  checkUploadLimit: (fileSize: number) => boolean;
+}
+
+interface Dataset {
+  id: string;
+  name: string;
+  filename: string;
+  size: number;
+  uploadedAt: Date;
+  columns: string[];
+  rowCount: number;
+  userId: string;
+}
+
+interface Dashboard {
+  id: string;
+  name: string;
+  description?: string;
+  config: VizroDashboard;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  isPublic: boolean;
+}
+```
+
+**Key Features:**
+- **Dashboard Library**: Save, load, organize, and share dashboards
+- **Dataset Management**: Upload CSV/Excel files with naming and organization
+- **Storage Limits**: Configurable limits per user (e.g., 50MB total, 10MB per file)
+- **Data References**: Datasets can be referenced by name in dashboard configurations
+- **Account Settings**: Profile management and preferences
+
+#### 6. Data Upload & Management
+```typescript
+interface DataUploadSystem {
+  // File upload
+  uploadFile: (file: File, name: string) => Promise<UploadResult>;
+  validateFile: (file: File) => ValidationResult;
+  
+  // Supported formats
+  supportedFormats: ['csv', 'xlsx', 'json'];
+  maxFileSize: number; // e.g., 10MB
+  maxTotalStorage: number; // e.g., 50MB per user
+  
+  // Data processing
+  parseCSV: (file: File) => Promise<DataPreview>;
+  parseExcel: (file: File) => Promise<DataPreview>;
+  inferDataTypes: (data: any[][]) => ColumnInfo[];
+  
+  // Dataset referencing
+  getDatasetReference: (datasetId: string) => string; // Returns name for use in configs
+  listAvailableDatasets: (userId: string) => Dataset[];
+}
+
+interface DataPreview {
+  columns: string[];
+  types: Record<string, 'string' | 'number' | 'date' | 'boolean'>;
+  sampleRows: any[][];
+  totalRows: number;
+}
+```
+
+**Upload Workflow:**
+1. User selects file (CSV/Excel)
+2. Client validates file size and format
+3. Preview data with column detection
+4. User confirms dataset name
+5. Upload to backend with processing
+6. Dataset becomes available for reference in dashboards
+
+#### 7. Configuration Import/Export System
+```typescript
+interface ConfigImportExport {
+  // Import existing configs
+  parseVizroConfig: (config: string | object) => Promise<ParseResult>;
+  buildFormStateFromConfig: (config: VizroDashboard) => FormState;
+  validateImportedConfig: (config: any) => ValidationResult;
+  
+  // Export current state
+  exportCurrentConfig: (format: 'json' | 'yaml') => string;
+  generateConfigFromFormState: (formState: FormState) => VizroDashboard;
+  
+  // File handling
+  importFromFile: (file: File) => Promise<ImportResult>;
+  exportToFile: (config: VizroDashboard, filename: string) => void;
+}
+
+interface FormState {
+  treeState: ComponentTree;
+  propertyState: ComponentProperties;
+  selectedPath: ComponentPath | null;
+}
+
+interface ParseResult {
+  success: boolean;
+  formState?: FormState;
+  errors?: ValidationError[];
+  warnings?: string[];
+}
+```
+
+**Key Features:**
+- **Bi-directional Conversion**: Config ↔ Form State
+- **Import Validation**: Ensure imported configs are valid
+- **Error Handling**: Clear feedback on import issues
+- **Format Support**: JSON and YAML import/export
+
+#### 8. History & Undo/Redo System
+```typescript
+interface HistoryManager {
+  // History stack
+  history: HistoryEntry[];
+  currentIndex: number;
+  maxHistorySize: number;
+  
+  // History operations
+  pushState: (state: FormState, action: string) => void;
+  undo: () => FormState | null;
+  redo: () => FormState | null;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  
+  // History management
+  clearHistory: () => void;
+  getHistoryPreview: () => HistoryPreview[];
+  jumpToState: (index: number) => FormState;
+}
+
+interface HistoryEntry {
+  id: string;
+  timestamp: Date;
+  action: string; // "Add Component", "Update Property", "Delete Component"
+  state: FormState;
+  preview?: string; // Brief description of changes
+}
+```
+
+**Key Features:**
+- **Action Tracking**: Record what changed with each edit
+- **State Snapshots**: Full form state at each step
+- **History Navigation**: Jump to any previous state
+- **Memory Management**: Limit history size to prevent memory issues
+
+#### 9. Future: GenAI Assistant System
+```typescript
+interface GenAIAssistant {
+  // AI suggestion context
+  currentContext: {
+    formState: FormState;
+    selectedComponent?: ComponentPath;
+    userDatasets: Dataset[];
+    vizroSchema: JSONSchema;
+  };
+  
+  // AI interactions
+  generateSuggestion: (prompt: string, context: AIContext) => Promise<AISuggestion>;
+  previewSuggestion: (suggestion: AISuggestion) => PreviewResult;
+  applySuggestion: (suggestion: AISuggestion) => FormState;
+  
+  // Suggestion types
+  suggestComponentImprovement: (componentPath: ComponentPath) => Promise<AISuggestion>;
+  suggestPageLayout: (pageContext: PageContext) => Promise<AISuggestion>;
+  suggestDashboardStructure: (requirements: string) => Promise<AISuggestion>;
+  
+  // UI integration
+  showAIButton: (level: 'dashboard' | 'page' | 'component') => boolean;
+  getAIPromptTemplate: (level: string) => string;
+}
+
+interface AISuggestion {
+  id: string;
+  type: 'component' | 'page' | 'dashboard';
+  description: string;
+  changes: FormStateChange[];
+  confidence: number;
+  reasoning: string;
+  previewConfig?: VizroDashboard;
+}
+
+interface AIContext {
+  currentConfig: VizroDashboard;
+  availableDatasets: Dataset[];
+  userIntent: string;
+  targetComponent?: ComponentPath;
+}
+```
+
+**Planned AI Features:**
+- **Component-Level AI**: Click AI button on any component for improvement suggestions
+- **Page-Level AI**: Suggest layout improvements for entire pages
+- **Dashboard-Level AI**: High-level structure and navigation suggestions
+- **Data-Aware**: AI considers available user datasets when making suggestions
+- **Preview Workflow**: Show AI suggestion → User reviews → Accept/Revert
+- **Context-Aware**: AI understands current dashboard state and Vizro capabilities
+
+**AI Integration Points:**
+```typescript
+// Component level - AI button next to each component
+<ComponentEditor>
+  <AIButton 
+    onClick={() => suggestComponentImprovement(componentPath)}
+    level="component" 
+  />
+</ComponentEditor>
+
+// Page level - AI button in page header
+<PageHeader>
+  <AIButton 
+    onClick={() => suggestPageLayout(pageContext)}
+    level="page" 
+  />
+</PageHeader>
+
+// Dashboard level - AI button in top navigation
+<TopNavigation>
+  <AIButton 
+    onClick={() => suggestDashboardStructure(userPrompt)}
+    level="dashboard" 
+  />
+</TopNavigation>
+```
+
+#### 10. Future: WebAssembly Preview
 ```typescript
 interface WebAssemblyPreview {
   previewURL: string | null;
@@ -237,18 +546,20 @@ interface AppState {
   generatedJSON: string;
   generatedYAML: string;
   
-  // Validation
-  globalValidationErrors: ValidationError[];
-  validateDashboard: () => Promise<ValidationResult>;
-  generateOutput: () => void;
+  // Backend validation
+  backendValidationErrors: ValidationError[];
+  isValidating: boolean;
+  lastValidatedConfig: VizroDashboard | null;
+  validateWithBackend: (treeState: ComponentTree, propertyState: ComponentProperties) => Promise<ValidationResult>;
 }
 ```
 
 #### Component-Level State
 - Local form state for tree building operations
 - Local form state for property editing
-- JSON output display state (syntax highlighting, error positions)
-- Form validation states per panel
+- Preview panel state (validation loading, error highlighting)
+- Minimal frontend validation (basic field types, required fields)
+- Backend validation results integration
 
 ## Backend Architecture
 
@@ -256,7 +567,7 @@ interface AppState {
 - **Framework**: FastAPI (async, auto-docs, type hints)
 - **Database**: PostgreSQL + SQLAlchemy (robust relational data)
 - **Cache**: Redis (session state, preview caching)
-- **Validation**: Pydantic (schema validation, data parsing)
+- **Validation**: Pydantic (Dashboard.model_validate for combining and validating frontend states)
 - **Queue**: Celery + Redis (async preview generation)
 - **Storage**: S3/MinIO (file assets, exports)
 
@@ -269,8 +580,8 @@ async def get_schema(version: str) -> JSONSchema:
     """Get Vizro schema for specific version"""
 
 @router.post("/api/v1/validate")
-async def validate_dashboard(config: VizroDashboard) -> ValidationResult:
-    """Validate dashboard configuration"""
+async def validate_dashboard(tree_state: ComponentTree, property_state: ComponentProperties) -> ValidationResult:
+    """Combine frontend states and validate via Dashboard.model_validate"""
 ```
 
 #### 2. Dashboard Operations
@@ -284,8 +595,8 @@ async def update_dashboard(dashboard_id: UUID, updates: DashboardUpdate) -> Dash
     """Update dashboard configuration"""
 
 @router.post("/api/v1/dashboards/{dashboard_id}/generate-json")
-async def generate_json(dashboard_id: UUID) -> VizroDashboard:
-    """Generate valid Vizro JSON from current state"""
+async def generate_json(dashboard_id: UUID, tree_state: ComponentTree, property_state: ComponentProperties) -> VizroDashboard:
+    """Combine frontend states, validate via Pydantic, and return valid Vizro JSON"""
 
 @router.post("/api/v1/dashboards/{dashboard_id}/preview-link")
 async def generate_preview_link(dashboard_id: UUID) -> PreviewLinkResponse:
@@ -301,12 +612,46 @@ async def list_templates(category: str = None) -> List[Template]:
 @router.post("/api/v1/templates")
 async def create_template(template: TemplateCreate) -> Template:
     """Create dashboard template"""
+
+#### 4. User & Data Management
+```python
+@router.get("/api/v1/users/{user_id}/dashboards")
+async def list_user_dashboards(user_id: UUID) -> List[Dashboard]:
+    """List all dashboards for a user"""
+
+@router.post("/api/v1/users/{user_id}/dashboards")
+async def create_dashboard(user_id: UUID, dashboard: DashboardCreate) -> Dashboard:
+    """Create new dashboard"""
+
+@router.get("/api/v1/users/{user_id}/datasets")
+async def list_user_datasets(user_id: UUID) -> List[Dataset]:
+    """List all datasets for a user"""
+
+@router.post("/api/v1/users/{user_id}/datasets/upload")
+async def upload_dataset(user_id: UUID, file: UploadFile, name: str) -> Dataset:
+    """Upload and process dataset file"""
+
+@router.delete("/api/v1/users/{user_id}/datasets/{dataset_id}")
+async def delete_dataset(user_id: UUID, dataset_id: UUID) -> None:
+    """Delete user dataset"""
+
+@router.get("/api/v1/users/{user_id}/storage")
+async def get_storage_usage(user_id: UUID) -> StorageUsage:
+    """Get current storage usage and limits"""
 ```
 
 ### Data Models
 
 #### Core Models
 ```python
+class User(BaseModel):
+    id: UUID
+    email: str
+    username: str
+    created_at: datetime
+    storage_limit: int = 50 * 1024 * 1024  # 50MB default
+    storage_used: int = 0
+
 class Dashboard(BaseModel):
     id: UUID
     name: str
@@ -315,7 +660,20 @@ class Dashboard(BaseModel):
     created_at: datetime
     updated_at: datetime
     created_by: UUID
+    is_public: bool = False
     
+class Dataset(BaseModel):
+    id: UUID
+    name: str
+    filename: str
+    file_size: int
+    file_path: str  # S3/storage path
+    columns: List[str]
+    row_count: int
+    data_types: Dict[str, str]  # column -> type mapping
+    uploaded_at: datetime
+    created_by: UUID
+
 class Template(BaseModel):
     id: UUID
     name: str
@@ -324,6 +682,13 @@ class Template(BaseModel):
     config: VizroDashboard
     preview_image: Optional[str]
     tags: List[str]
+    
+class StorageUsage(BaseModel):
+    used_bytes: int
+    limit_bytes: int
+    dataset_count: int
+    dashboard_count: int
+    available_bytes: int
     
 class PreviewSession(BaseModel):
     id: UUID
@@ -436,62 +801,186 @@ interface DataSource {
 
 ## Deployment Architecture
 
-### Container Strategy
+### Docker Development Strategy
+
+**docker-compose.yml (Development)**
 ```yaml
+version: '3.8'
 services:
   frontend:
-    image: vizro-gui-frontend:latest
-    ports: ["3000:3000"]
-    
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
   backend:
-    image: vizro-gui-backend:latest
-    ports: ["8000:8000"]
-    depends_on: [postgres, redis]
-    
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://vizro:vizro@postgres:5432/vizro_gui
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
   postgres:
-    image: postgres:15
-    volumes: ["postgres_data:/var/lib/postgresql/data"]
-    
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=vizro_gui
+      - POSTGRES_USER=vizro
+      - POSTGRES_PASSWORD=vizro
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
   redis:
     image: redis:7-alpine
-    
-  nginx:
-    image: nginx:alpine
-    ports: ["80:80", "443:443"]
-    volumes: ["./nginx.conf:/etc/nginx/nginx.conf"]
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
 ```
+
+**Makefile**
+```makefile
+.PHONY: up down build logs test migrate
+
+# Development commands
+up:
+	docker-compose up -d
+
+down:
+	docker-compose down
+
+build:
+	docker-compose build
+
+logs:
+	docker-compose logs -f
+
+logs-frontend:
+	docker-compose logs -f frontend
+
+logs-backend:
+	docker-compose logs -f backend
+
+# Development shells
+shell-frontend:
+	docker-compose exec frontend sh
+
+shell-backend:
+	docker-compose exec backend bash
+
+shell-db:
+	docker-compose exec postgres psql -U vizro -d vizro_gui
+
+# Testing
+test:
+	docker-compose exec backend pytest
+	docker-compose exec frontend npm test
+
+test-backend:
+	docker-compose exec backend pytest
+
+test-frontend:
+	docker-compose exec frontend npm test
+
+# Database management
+migrate:
+	docker-compose exec backend alembic upgrade head
+
+seed:
+	docker-compose exec backend python scripts/seed_db.py
+
+db-reset:
+	docker-compose exec postgres psql -U vizro -d vizro_gui -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	make migrate
+
+# Production builds
+build-prod:
+	docker-compose -f docker-compose.prod.yml build
+
+deploy-staging:
+	docker-compose -f docker-compose.staging.yml up -d
+
+deploy-prod:
+	docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Docker Development Benefits
+
+**Environment Consistency:**
+- Identical development/staging/production environments
+- No "works on my machine" issues
+- Simplified onboarding for new developers
+
+**Service Management:**
+- All dependencies containerized (PostgreSQL, Redis)
+- Easy service isolation and debugging
+- Clean separation of concerns
+
+**Deployment Ready:**
+- Production images built from same Dockerfiles
+- Infrastructure as code with docker-compose
+- Easy scaling and orchestration
+
+**Development Workflow:**
+- Single command to start entire stack (`make up`)
+- Hot reloading with volume mounts
+- Integrated testing and database management
 
 ### Scaling Considerations
 - **Horizontal scaling**: Stateless backend services
 - **Database scaling**: Read replicas for dashboard queries
 - **Cache scaling**: Redis Cluster for high availability
 - **CDN integration**: Static assets and preview images
+- **Container orchestration**: Kubernetes for production scaling
 
 ## Development Phases
 
 ### Phase 1: Core Infrastructure (4-6 weeks)
+- **Docker Development Environment** (docker-compose + Makefile setup)
 - Four-panel layout (Top Bar | Left Form | Central Preview | Right Form)
-- Custom Schema Form Engine (avoiding limiting JSON form libraries)
+- **Dynamic Schema Form Engine** (ZERO hardcoding, version agnostic)
+- **Component Field Registry** (specific + generic fallback patterns)
 - User authentication and dashboard management
 - Backend API structure and database models
 
-### Phase 2: Form-Based Component System (6-8 weeks)
-- Tree Builder Form (left panel) for component hierarchy
-- Property Editor Form (right panel) for component details
+### Phase 2: Schema-Driven Form System (6-8 weeks)
+- **Dynamic Tree Builder** (extract hierarchy from schema, no hardcoded components)
+- **Dynamic Property Editor** (extract properties from schema, exclude hierarchy automatically)
+- **Field Renderer Registry** (specific renderers + generic fallbacks)
 - JSON/YAML output generation and display
-- Basic validation and error handling
+- Backend validation integration
 
-### Phase 3: Advanced Form Features (4-6 weeks)
-- Complex nested component relationships
-- Conditional form fields based on schema dependencies
-- Two-state management (tree building vs property editing)
+### Phase 3: Advanced Schema Features (4-6 weeks)
+- **Schema Version Management** (seamless 0.1.43 → 0.1.44 transitions)
+- **Complex Conditional Logic** (schema-driven conditional fields)
+- **Custom Field Renderers** (for complex Vizro-specific UI patterns)
 - Template system and configuration export
+- Performance optimization for dynamic form generation
 
 ### Phase 4: Production Readiness (3-4 weeks)
-- Comprehensive form validation
-- Performance optimization for large dashboards
+- Comprehensive schema compatibility testing
+- Performance optimization for large schemas
 - Security hardening
-- Documentation and user guides
+- Documentation and extension guides
 
 ### Phase 5: Live Preview Integration (Future)
 - WebAssembly integration
@@ -499,5 +988,7 @@ services:
 - iframe-based live dashboard preview
 
 **Current Phase Timeline: 17-24 weeks (4-6 months)**
+
+**CRITICAL SUCCESS METRIC**: When schema 0.1.44 is released, ZERO code changes should be needed - forms should automatically adapt to new schema structure.
 
 This architecture provides a solid foundation for building a production-grade Vizro GUI builder that can scale with user needs while maintaining performance and reliability.

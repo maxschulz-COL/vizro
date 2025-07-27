@@ -1,6 +1,34 @@
 # CLAUDE.md
 
+**IMPORTANT: Always read this entire file at the start of every session before beginning work.**
+
 This file provides guidance to Claude Code (claude.ai/code) when working with the Vizro GUI Builder project.
+
+## Current State & Key Decisions
+
+### Critical Design Principles
+- **Zero Hardcoding**: All forms generated from schema - NO component names in code
+- **Schema-Driven**: Must work with ANY Vizro schema version (0.1.43 → 0.1.44+)  
+- **Form-Based**: NOT drag-and-drop - form interface for component tree + properties
+- **Backend Validation**: Frontend sends raw states, backend validates via Pydantic
+- **Dual-Mode**: Tree building (hierarchy) vs. Property editing (details)
+- **Component Registry**: Specific field components + generic fallbacks for standard types
+
+### Current Implementation Status
+- ✅ **Project Structure**: Docker + Makefile development environment
+- ✅ **Backend Packaging**: pyproject.toml with proper dependency management
+- ⏳ **Schema Form Engine**: Not yet implemented (next priority)
+- ⏳ **Tree Builder Form**: Not yet implemented
+- ⏳ **Property Editor Form**: Not yet implemented
+- ⏳ **Backend Validation API**: Not yet implemented
+
+### Architecture Evolution
+- **2025-01-26**: Initial architecture defined, form-based approach decided
+- **2025-01-27**: Backend migrated to pyproject.toml for modern Python packaging
+- **Next**: Schema form engine prototype and dynamic form generation
+
+### Development History
+See `DEVELOPMENT.md` for complete chronological history of decisions, implementations, and rationale.
 
 ## Project Overview
 
@@ -28,11 +56,13 @@ The Vizro GUI Builder is a new application that provides a form-based interface 
 - Build Tool: Vite
 
 **Backend:**
-- FastAPI (Python)
+- FastAPI (Python) with pyproject.toml packaging
 - PostgreSQL + SQLAlchemy
 - Redis (caching, sessions)
 - Pydantic (Dashboard.model_validate for backend validation)
 - Celery + Redis (async tasks)
+- uv for fast dependency management
+- Docker containerized development
 
 ### Core Components
 
@@ -83,6 +113,26 @@ make db-reset        # Reset database (drop/create/migrate)
 make build-prod      # Build production images
 make deploy-staging  # Deploy to staging
 make deploy-prod     # Deploy to production
+```
+
+### Local Development (Alternative to Docker)
+
+**Backend** (uses pyproject.toml + uv):
+```bash
+cd backend
+uv sync                             # Install dependencies
+uv run uvicorn app.main:app --reload # Start development server
+uv run pytest                      # Run tests
+uv run pytest --cov=app            # Run tests with coverage
+```
+
+**Frontend**:
+```bash
+cd frontend
+npm install                         # Install dependencies
+npm run dev                         # Start development server
+npm test                           # Run tests
+npm run build                      # Build for production
 ```
 
 ### Direct Docker Commands (if needed)

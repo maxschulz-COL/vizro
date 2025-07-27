@@ -353,23 +353,45 @@ useEffect(() => {
 - Create ValidationIndicator component
 - Design backend validation API endpoint
 
-### [Date] - [Milestone/Feature]
-*Template for future entries*
-
+### 2025-01-27 - Backend Migration to pyproject.toml + uv Integration
 **What was accomplished:**
-- 
+- Migrated backend from requirements.txt to modern pyproject.toml configuration
+- Integrated uv package manager for faster dependency management
+- Updated Docker development workflow with uv
+- Streamlined development commands and documentation
 
 **Decisions made:**
-- 
+- **Modern Python Packaging**: Use pyproject.toml as standard Python project configuration
+- **uv as Primary Tool**: Use uv for all dependency management (10-100x faster than pip)
+- **Hatchling Build System**: Consistent with parent Vizro project structure
+- **Dependency Groups**: Separate runtime, test, and dev dependencies
+- **Docker + uv**: Install uv in development containers
+- **Simplified Workflow**: Remove pip fallback, standardize on uv
 
-**Challenges encountered:**
-- 
+**Changes implemented:**
+- Created `backend/pyproject.toml` with project metadata, dependencies, and tool configs
+- Updated `backend/Dockerfile.dev` to install and use uv instead of pip
+- Added uv command examples to pyproject.toml
+- Updated CLAUDE.md development commands to use uv exclusively
+- Removed deprecated `backend/requirements.txt`
+- Generated `uv.lock` for dependency locking
 
-**Solutions implemented:**
-- 
+**Benefits achieved:**
+- Modern Python packaging standard alignment
+- Significantly faster dependency installation and resolution
+- Better dependency caching and lock file management
+- Centralized tool configuration (pytest, ruff, mypy)
+- Consistent development experience across Docker and local workflows
+
+**Files modified:**
+- `backend/pyproject.toml` (created)
+- `backend/Dockerfile.dev` (updated to use uv)
+- `backend/requirements.txt` (removed)
+- `CLAUDE.md` (updated with uv commands)
 
 **Next actions:**
-- 
+- Begin schema form engine implementation
+- Consider uv for frontend package management if applicable
 
 ---
 

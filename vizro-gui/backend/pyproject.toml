@@ -1,0 +1,117 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vizro-gui-backend"
+version = "0.1.0"
+description = "Backend API for Vizro GUI Builder"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+authors = [
+    { name = "Vizro Team" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn[standard]==0.24.0",
+    "pydantic==2.5.0",
+    "sqlalchemy==2.0.23",
+    "psycopg2-binary==2.9.9",
+    "redis==5.0.1",
+    "python-multipart==0.0.6",
+    "python-jose[cryptography]==3.3.0",
+    "passlib[bcrypt]==1.7.4",
+    "alembic==1.13.0",
+    "python-dotenv==1.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest==7.4.3",
+    "pytest-asyncio==0.21.1",
+    "httpx==0.25.2",
+]
+
+dev = [
+    "vizro-gui-backend[test]",
+]
+
+[project.urls]
+Homepage = "https://github.com/mckinsey/vizro"
+Documentation = "https://vizro.readthedocs.io/"
+Repository = "https://github.com/mckinsey/vizro"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "vizro-gui-backend[dev]",
+]
+
+[tool.hatch.envs.default.scripts]
+serve = "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+test = "pytest {args}"
+test-cov = "pytest --cov=app {args}"
+
+# Recommended: Use uv for faster dependency management
+# uv sync                              # Install dependencies
+# uv run uvicorn app.main:app --reload # Start development server
+# uv run pytest                       # Run tests
+
+[tool.hatch.envs.test]
+dependencies = [
+    "vizro-gui-backend[test]",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501", # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true

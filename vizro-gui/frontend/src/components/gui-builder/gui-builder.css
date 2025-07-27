@@ -1,0 +1,230 @@
+/**
+ * Custom styles for GUI Builder components
+ * 
+ * Additional styling beyond Tailwind CSS for specific GUI builder needs
+ */
+
+/* Component Tree Styles */
+.component-tree-node {
+  position: relative;
+}
+
+.component-tree-node::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.component-tree-node:hover::before {
+  background: hsl(var(--border));
+}
+
+.component-tree-node.selected::before {
+  background: hsl(var(--primary));
+}
+
+/* Syntax Highlighting for JSON/YAML */
+.json-display {
+  font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  line-height: 1.5;
+}
+
+.json-display .json-key {
+  color: hsl(var(--primary));
+  font-weight: 500;
+}
+
+.json-display .json-string {
+  color: hsl(var(--muted-foreground));
+}
+
+.json-display .json-number {
+  color: hsl(var(--destructive));
+}
+
+.json-display .json-boolean {
+  color: hsl(var(--success));
+}
+
+.json-display .json-null {
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
+/* Panel Transitions */
+.panel-transition {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tree Animations */
+.tree-expand-animation {
+  animation: expandIn 0.2s ease-out;
+}
+
+.tree-collapse-animation {
+  animation: collapseOut 0.2s ease-in;
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+  }
+}
+
+@keyframes collapseOut {
+  from {
+    opacity: 1;
+    max-height: 200px;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+  }
+}
+
+/* Form Field Focus States */
+.form-field-focused {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  border-color: hsl(var(--primary));
+}
+
+/* Validation States */
+.validation-error {
+  border-color: hsl(var(--destructive));
+  box-shadow: 0 0 0 2px hsl(var(--destructive) / 0.1);
+}
+
+.validation-success {
+  border-color: hsl(var(--success) / 0.5);
+}
+
+/* Drag and Drop Styles (for future implementation) */
+.drag-handle {
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.component-tree-node:hover .drag-handle {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drop-zone {
+  position: relative;
+}
+
+.drop-zone::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: hsl(var(--primary));
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.drop-zone.drag-over::after {
+  opacity: 1;
+}
+
+/* Scrollbar Styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Loading States */
+.loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .gui-builder-panels {
+    flex-direction: column;
+  }
+  
+  .panel-left,
+  .panel-right {
+    width: 100% !important;
+    height: 300px;
+  }
+  
+  .panel-center {
+    flex: 1;
+    min-height: 400px;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .component-tree-node::before {
+    width: 3px;
+  }
+  
+  .json-display {
+    font-weight: 600;
+  }
+  
+  .validation-error {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .panel-transition,
+  .tree-expand-animation,
+  .tree-collapse-animation,
+  .loading-skeleton {
+    animation: none !important;
+    transition: none !important;
+  }
+}

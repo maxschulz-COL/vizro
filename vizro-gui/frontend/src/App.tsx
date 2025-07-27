@@ -1,56 +1,59 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
+import { Button } from './components/ui/button'
+import { Card } from './components/ui/card'
+
+// Test store import
+import { useDashboardStore } from './stores/dashboardStore'
+
+// Test schema client import
+import { schemaClient } from './lib/schema-client'
+
+// Try importing GUIBuilder
+import { GUIBuilder } from './components/gui-builder/GUIBuilder'
 
 function App() {
-  const [count, setCount] = useState(0)
-
+  // Test if the store works
+  const dashboard = useDashboardStore(state => state.dashboard);
+  const [schemaStatus, setSchemaStatus] = useState<string>('Not tested');
+  const [showGUI, setShowGUI] = useState(false);
+  
+  const testSchemaClient = async () => {
+    try {
+      setSchemaStatus('Testing...');
+      const components = await schemaClient.getComponents('0.1.43');
+      setSchemaStatus(`✅ Schema client working - Found ${components.components.length} components`);
+    } catch (error) {
+      setSchemaStatus(`❌ Schema client failed: ${error.message}`);
+    }
+  };
+  
+  if (showGUI) {
+    return <GUIBuilder />;
+  }
+  
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Vizro GUI Builder
-        </h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-96">
-          {/* Top Navigation Bar */}
-          <div className="lg:col-span-4 bg-card border rounded-lg p-4">
-            <h2 className="text-lg font-semibold">Top Navigation Bar</h2>
-            <p className="text-muted-foreground">Login, Save, Export, etc.</p>
-          </div>
-          
-          {/* Tree Builder (Left Panel) */}
-          <div className="bg-card border rounded-lg p-4">
-            <h2 className="text-lg font-semibold">Tree Builder</h2>
-            <p className="text-muted-foreground">Schema-driven form for component hierarchy</p>
-          </div>
-          
-          {/* Central Preview */}
-          <div className="lg:col-span-2 bg-card border rounded-lg p-4">
-            <h2 className="text-lg font-semibold">Central Preview</h2>
-            <p className="text-muted-foreground">JSON/YAML output with validation</p>
-            
-            <div className="mt-4 p-4 bg-muted rounded">
-              <p>✅ Connected to backend API</p>
-              <p>Frontend is running on: <code>http://localhost:3000</code></p>
-              <p>Backend API expected at: <code>http://localhost:8000</code></p>
-            </div>
-          </div>
-          
-          {/* Property Editor (Right Panel) */}
-          <div className="bg-card border rounded-lg p-4">
-            <h2 className="text-lg font-semibold">Property Editor</h2>
-            <p className="text-muted-foreground">Schema-driven form for component properties</p>
-          </div>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <h1 className="text-2xl font-bold mb-4">Vizro GUI Builder - Debug Mode</h1>
+      <p className="text-gray-600">Testing all dependencies...</p>
+      <Card className="mt-4 p-4 space-y-4">
+        <p>✅ React is working correctly.</p>
+        <p>✅ UI components working (Button, Card)</p>
+        <p>✅ Store working - Dashboard title: {dashboard?.title || 'No title'}</p>
+        <p>✅ Schema client imported successfully</p>
+        <p>✅ GUIBuilder imported successfully</p>
+        <p>Schema client test: {schemaStatus}</p>
+        <div className="space-y-2">
+          <Button onClick={() => alert(`Dashboard has ${dashboard?.pages?.length || 0} pages`)}>
+            Show dashboard info
+          </Button>
+          <Button onClick={testSchemaClient} variant="outline">
+            Test schema client
+          </Button>
+          <Button onClick={() => setShowGUI(true)} variant="default">
+            🚀 Launch GUI Builder
+          </Button>
         </div>
-        
-        <div className="text-center mt-8">
-          <button 
-            className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
-            onClick={() => setCount((count) => count + 1)}
-          >
-            Test Counter: {count}
-          </button>
-        </div>
-      </div>
+      </Card>
     </div>
   )
 }

@@ -13,6 +13,10 @@ async def api_root():
         "message": "Vizro GUI Builder API v1",
         "endpoints": {
             "schema": "/api/v1/schema",
+            "schema_analysis": "/api/v1/schema/analysis/{version}",
+            "components": "/api/v1/schema/components/{version}",
+            "component_detail": "/api/v1/schema/components/{version}/{component_type}",
+            "hierarchy": "/api/v1/schema/hierarchy/{version}",
             "validation": "/api/v1/validation",
             "docs": "/docs"
         }

@@ -1,6 +1,9 @@
 # CLAUDE.md
 
 **IMPORTANT: Always read this entire file at the start of every session before beginning work.**
+**ALWAYS record potential next steps here**
+**IMPORTANT: Always check the DEVELOPMENT.md to see what has been done recently, and always add to it after a big chunk of work**
+
 
 This file provides guidance to Claude Code (claude.ai/code) when working with the Vizro GUI Builder project.
 
@@ -17,10 +20,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ### Current Implementation Status
 - ✅ **Project Structure**: Docker + Makefile development environment
 - ✅ **Backend Packaging**: pyproject.toml with proper dependency management
-- ⏳ **Schema Form Engine**: Not yet implemented (next priority)
-- ⏳ **Tree Builder Form**: Not yet implemented
-- ⏳ **Property Editor Form**: Not yet implemented
-- ⏳ **Backend Validation API**: Not yet implemented
+- ✅ **Backend Schema Analysis**: Parse and analyze Vizro JSON schema (31 components, 173 fields)
+- ✅ **Frontend Component Registry**: Pattern-based form component mapping system
+- ✅ **Dynamic Form Generator**: React Hook Form integration with schema-driven generation
+- ⏳ **Field Mapping Engine**: Convert JSON schema types to form components
+- ⏳ **Tree Builder/Property Editor**: Dual-mode form interface
+- ⏳ **Backend Validation API**: Real-time validation integration
 
 ### Architecture Evolution
 - **2025-01-26**: Initial architecture defined, form-based approach decided
